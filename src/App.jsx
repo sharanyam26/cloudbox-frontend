@@ -2,20 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
 
 function Protected({ children }) {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" replace />;
-}
-
-function Dashboard() {
-  const { user, logout } = useAuth();
-  return (
-    <div className="p-8">
-      <h1 className="text-xl font-semibold">Welcome, {user?.name}</h1>
-      <button onClick={logout} className="mt-4 text-sm text-indigo-600">Log out</button>
-    </div>
-  );
 }
 
 function AppRoutes() {
