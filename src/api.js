@@ -49,4 +49,5 @@ export const restoreFolder = (id) => api.post(`/folders/${id}/restore`);
 export const restoreFile = (id) => api.post(`/files/${id}/restore`);
 export const deleteFolderForever = (id) => api.delete(`/folders/${id}`);
 export const deleteFileForever = (id) => api.delete(`/files/${id}`);
+export const searchItems = (q) => api.get('/search', { params: { q } });
 export default api;

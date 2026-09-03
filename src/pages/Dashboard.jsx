@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   listFolders, createFolder, trashFolder, restoreFolder, deleteFolderForever,
   listFiles, uploadFile, downloadFile, trashFile, restoreFile, deleteFileForever,
-  listTrashFolders, listTrashFiles, listSharedWithMe, deleteShare,
+  listTrashFolders, listTrashFiles, listSharedWithMe, deleteShare, searchItems,
 } from '../api';
 import ShareModal from '../components/ShareModal';
 
@@ -24,6 +24,9 @@ export default function Dashboard() {
   const [uploads, setUploads] = useState([]);
   const [shareTarget, setShareTarget] = useState(null); // {id, name, type}
   const fileInputRef = useRef(null);
+
+  const [query, setQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null); // null = not searching
 
   const load = async () => {
     setLoading(true);
@@ -47,10 +50,22 @@ export default function Dashboard() {
 
   useEffect(() => { load(); }, [mode, currentFolderId]);
 
+  // Debounced search
+  useEffect(() => {
+    if (!query.trim()) { setSearchResults(null); return; }
+    const t = setTimeout(async () => {
+      const res = await searchItems(query.trim());
+      setSearchResults(res.data);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
   const switchMode = (m) => {
     setMode(m);
     setCurrentFolderId(null);
     setTrail([]);
+    setQuery('');
+    setSearchResults(null);
   };
 
   const navigateTo = (folderId) => {
@@ -62,6 +77,14 @@ export default function Dashboard() {
 
   const openFolder = (f) => {
     setTrail([...trail, f]);
+    setCurrentFolderId(f.id);
+  };
+
+  const openFolderFromSearch = (f) => {
+    setQuery('');
+    setSearchResults(null);
+    setMode('drive');
+    setTrail([f]);
     setCurrentFolderId(f.id);
   };
 
@@ -194,7 +217,14 @@ export default function Dashboard() {
 
       {/* Main content */}
       <main className="flex-1 p-8 relative">
-        {mode === 'drive' && (
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search files and folders..."
+          className="w-full max-w-md border border-slate-300 rounded-lg px-3 py-2 text-sm mb-6"
+        />
+
+        {!searchResults && mode === 'drive' && (
           <div className="flex items-center gap-1 text-sm text-slate-500 mb-6">
             <button onClick={() => navigateTo(null)} className="hover:text-indigo-600 font-medium">My Drive</button>
             {trail.map((f) => (
@@ -205,10 +235,40 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-        {mode === 'shared' && <h1 className="text-lg font-semibold text-slate-900 mb-6">Shared with me</h1>}
-        {mode === 'trash' && <h1 className="text-lg font-semibold text-slate-900 mb-6">Trash</h1>}
+        {!searchResults && mode === 'shared' && <h1 className="text-lg font-semibold text-slate-900 mb-6">Shared with me</h1>}
+        {!searchResults && mode === 'trash' && <h1 className="text-lg font-semibold text-slate-900 mb-6">Trash</h1>}
+        {searchResults && <h1 className="text-lg font-semibold text-slate-900 mb-6">Search results for "{query}"</h1>}
 
-        {loading ? (
+        {searchResults ? (
+          searchResults.folders.length === 0 && searchResults.files.length === 0 ? (
+            <p className="text-slate-400 text-sm">No results.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {searchResults.folders.map((f) => (
+                <div
+                  key={f.id}
+                  onDoubleClick={() => openFolderFromSearch(f)}
+                  className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-3 text-indigo-600">📁</div>
+                  <div className="text-sm font-medium text-slate-900 truncate">{f.name}</div>
+                  <div className="text-xs text-slate-400 mt-1">Folder</div>
+                </div>
+              ))}
+              {searchResults.files.map((f) => (
+                <div
+                  key={f.id}
+                  onDoubleClick={() => handleDownload(f)}
+                  className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
+                >
+                  <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">📄</div>
+                  <div className="text-sm font-medium text-slate-900 truncate">{f.name}</div>
+                  <div className="text-xs text-slate-400 mt-1">{(f.sizeBytes / 1024).toFixed(1)} KB</div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : loading ? (
           <p className="text-slate-400 text-sm">Loading...</p>
         ) : mode === 'shared' ? (
           sharedItems.length === 0 ? (
