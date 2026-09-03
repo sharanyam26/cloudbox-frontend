@@ -36,4 +36,17 @@ export const renameFile = (id, name) => api.patch(`/files/${id}/rename`, { name 
 export const starFile = (id) => api.patch(`/files/${id}/star`);
 export const trashFile = (id) => api.post(`/files/${id}/trash`);
 
+// Shares
+export const createShare = (resourceType, resourceId, shareWithEmail, role) =>
+  api.post('/shares', { resourceType, resourceId, shareWithEmail, role });
+export const listSharedWithMe = () => api.get('/shares/with-me');
+export const deleteShare = (id) => api.delete(`/shares/${id}`);
+
+// Trash
+export const listTrashFolders = () => api.get('/folders/trash');
+export const listTrashFiles = () => api.get('/files/trash');
+export const restoreFolder = (id) => api.post(`/folders/${id}/restore`);
+export const restoreFile = (id) => api.post(`/files/${id}/restore`);
+export const deleteFolderForever = (id) => api.delete(`/folders/${id}`);
+export const deleteFileForever = (id) => api.delete(`/files/${id}`);
 export default api;
