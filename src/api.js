@@ -55,4 +55,6 @@ export const starFolder = (id) => api.patch(`/folders/${id}/star`);
 
 export const listStarredFolders = () => api.get('/folders/starred');
 export const listStarredFiles = () => api.get('/files/starred');
+export const createLinkShare = (resourceType, resourceId, role, password, expiresInHours) =>
+  api.post('/link-shares', { resourceType, resourceId, role, password, expiresInHours });
 export default api;

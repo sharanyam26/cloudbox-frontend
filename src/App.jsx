@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import PublicShare from './pages/PublicShare';
 
 function Protected({ children }) {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<Protected><Dashboard /></Protected>} />
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/share/:token" element={<PublicShare />} />
     </Routes>
   );
 }
