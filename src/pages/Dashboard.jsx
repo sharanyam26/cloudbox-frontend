@@ -4,12 +4,13 @@ import {
   listFolders, createFolder, trashFolder, restoreFolder, deleteFolderForever,
   listFiles, uploadFile, downloadFile, trashFile, restoreFile, deleteFileForever,
   listTrashFolders, listTrashFiles, listSharedWithMe, deleteShare, searchItems,
+  starFolder, starFile, listStarredFolders, listStarredFiles,
 } from '../api';
 import ShareModal from '../components/ShareModal';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const [mode, setMode] = useState('drive'); // 'drive' | 'shared' | 'trash'
+  const [mode, setMode] = useState('drive'); // 'drive' | 'starred' | 'shared' | 'trash'
 
   const [currentFolderId, setCurrentFolderId] = useState(null);
   const [trail, setTrail] = useState([]);
@@ -22,11 +23,11 @@ export default function Dashboard() {
   const [newFolderName, setNewFolderName] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [uploads, setUploads] = useState([]);
-  const [shareTarget, setShareTarget] = useState(null); // {id, name, type}
+  const [shareTarget, setShareTarget] = useState(null);
   const fileInputRef = useRef(null);
 
   const [query, setQuery] = useState('');
-  const [searchResults, setSearchResults] = useState(null); // null = not searching
+  const [searchResults, setSearchResults] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -37,6 +38,10 @@ export default function Dashboard() {
         setFiles(fi.data);
       } else if (mode === 'trash') {
         const [f, fi] = await Promise.all([listTrashFolders(), listTrashFiles()]);
+        setFolders(f.data);
+        setFiles(fi.data);
+      } else if (mode === 'starred') {
+        const [f, fi] = await Promise.all([listStarredFolders(), listStarredFiles()]);
         setFolders(f.data);
         setFiles(fi.data);
       } else if (mode === 'shared') {
@@ -50,7 +55,6 @@ export default function Dashboard() {
 
   useEffect(() => { load(); }, [mode, currentFolderId]);
 
-  // Debounced search
   useEffect(() => {
     if (!query.trim()) { setSearchResults(null); return; }
     const t = setTimeout(async () => {
@@ -80,14 +84,6 @@ export default function Dashboard() {
     setCurrentFolderId(f.id);
   };
 
-  const openFolderFromSearch = (f) => {
-    setQuery('');
-    setSearchResults(null);
-    setMode('drive');
-    setTrail([f]);
-    setCurrentFolderId(f.id);
-  };
-
   const handleNewFolder = async (e) => {
     e.preventDefault();
     if (!newFolderName.trim()) return;
@@ -98,6 +94,10 @@ export default function Dashboard() {
   };
 
   const handleDownload = async (f) => {
+    if (!f?.id) {
+      alert('This file is unavailable.');
+      return;
+    }
     const res = await downloadFile(f.id);
     const url = URL.createObjectURL(res.data);
     const a = document.createElement('a');
@@ -107,7 +107,6 @@ export default function Dashboard() {
     URL.revokeObjectURL(url);
   };
 
-  // ---- Trash actions ----
   const handleTrash = async (item, type) => {
     if (type === 'folder') await trashFolder(item.id);
     else await trashFile(item.id);
@@ -132,7 +131,12 @@ export default function Dashboard() {
     load();
   };
 
-  // ---- Upload ----
+  const handleStar = async (item, type) => {
+    if (type === 'folder') await starFolder(item.id);
+    else await starFile(item.id);
+    load();
+  };
+
   const doUpload = (fileList) => {
     Array.from(fileList).forEach(async (file) => {
       const uploadId = `${file.name}-${Date.now()}-${Math.random()}`;
@@ -173,6 +177,8 @@ export default function Dashboard() {
     </button>
   );
 
+  const canAct = mode === 'drive' || mode === 'starred';
+
   return (
     <div
       className="flex min-h-screen bg-slate-50"
@@ -205,6 +211,7 @@ export default function Dashboard() {
 
         <div className="flex flex-col">
           {navBtn('drive', 'My Drive', '📁')}
+          {navBtn('starred', 'Starred', '⭐')}
           {navBtn('shared', 'Shared with me', '👥')}
           {navBtn('trash', 'Trash', '🗑')}
         </div>
@@ -235,6 +242,7 @@ export default function Dashboard() {
             ))}
           </div>
         )}
+        {!searchResults && mode === 'starred' && <h1 className="text-lg font-semibold text-slate-900 mb-6">Starred</h1>}
         {!searchResults && mode === 'shared' && <h1 className="text-lg font-semibold text-slate-900 mb-6">Shared with me</h1>}
         {!searchResults && mode === 'trash' && <h1 className="text-lg font-semibold text-slate-900 mb-6">Trash</h1>}
         {searchResults && <h1 className="text-lg font-semibold text-slate-900 mb-6">Search results for "{query}"</h1>}
@@ -245,22 +253,14 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {searchResults.folders.map((f) => (
-                <div
-                  key={f.id}
-                  onDoubleClick={() => openFolderFromSearch(f)}
-                  className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
-                >
+                <div key={f.id} className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow">
                   <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-3 text-indigo-600">📁</div>
                   <div className="text-sm font-medium text-slate-900 truncate">{f.name}</div>
                   <div className="text-xs text-slate-400 mt-1">Folder</div>
                 </div>
               ))}
               {searchResults.files.map((f) => (
-                <div
-                  key={f.id}
-                  onDoubleClick={() => handleDownload(f)}
-                  className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow"
-                >
+                <div key={f.id} onDoubleClick={() => handleDownload(f)} className="bg-white border border-slate-200 rounded-xl p-4 cursor-pointer hover:shadow-md transition-shadow">
                   <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3">📄</div>
                   <div className="text-sm font-medium text-slate-900 truncate">{f.name}</div>
                   <div className="text-xs text-slate-400 mt-1">{(f.sizeBytes / 1024).toFixed(1)} KB</div>
@@ -281,9 +281,7 @@ export default function Dashboard() {
                     {s.resourceType === 'FOLDER' ? '📁' : '📄'}
                   </div>
                   <div className="text-sm font-medium text-slate-900 truncate">{s.resource?.name}</div>
-                  <div className="text-xs text-slate-400 mt-1">
-                    Shared by {s.sharedBy?.email} · {s.role}
-                  </div>
+                  <div className="text-xs text-slate-400 mt-1">Shared by {s.sharedBy?.email} · {s.role}</div>
                   <div className="flex gap-3 mt-3 text-xs">
                     {s.resourceType === 'FILE' && (
                       <button onClick={() => handleDownload(s.resource)} className="text-indigo-600">Download</button>
@@ -296,22 +294,23 @@ export default function Dashboard() {
           )
         ) : folders.length === 0 && files.length === 0 ? (
           <p className="text-slate-400 text-sm">
-            {mode === 'trash' ? 'Trash is empty.' : 'This folder is empty. Drag files here to upload.'}
+            {mode === 'trash' ? 'Trash is empty.' : mode === 'starred' ? 'No starred items yet.' : 'This folder is empty. Drag files here to upload.'}
           </p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {folders.map((f) => (
               <div
                 key={f.id}
-                onDoubleClick={() => mode === 'drive' && openFolder(f)}
+                onDoubleClick={() => canAct && openFolder(f)}
                 className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow group"
               >
                 <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center mb-3 text-indigo-600">📁</div>
                 <div className="text-sm font-medium text-slate-900 truncate cursor-pointer">{f.name}</div>
                 <div className="text-xs text-slate-400 mt-1">Folder</div>
                 <div className="flex gap-3 mt-3 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                  {mode === 'drive' ? (
+                  {canAct ? (
                     <>
+                      <button onClick={() => handleStar(f, 'folder')} className="text-yellow-500">{f.starred ? '★' : '☆'}</button>
                       <button onClick={() => setShareTarget({ id: f.id, name: f.name, type: 'folder' })} className="text-indigo-600">Share</button>
                       <button onClick={() => handleTrash(f, 'folder')} className="text-slate-400">Trash</button>
                     </>
@@ -325,12 +324,9 @@ export default function Dashboard() {
               </div>
             ))}
             {files.map((f) => (
-              <div
-                key={f.id}
-                className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow group"
-              >
+              <div key={f.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-md transition-shadow group">
                 <div
-                  onDoubleClick={() => mode === 'drive' && handleDownload(f)}
+                  onDoubleClick={() => canAct && handleDownload(f)}
                   className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center mb-3 cursor-pointer"
                 >
                   📄
@@ -338,9 +334,10 @@ export default function Dashboard() {
                 <div className="text-sm font-medium text-slate-900 truncate">{f.name}</div>
                 <div className="text-xs text-slate-400 mt-1">{(f.sizeBytes / 1024).toFixed(1)} KB</div>
                 <div className="flex gap-3 mt-3 text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                  {mode === 'drive' ? (
+                  {canAct ? (
                     <>
                       <button onClick={() => handleDownload(f)} className="text-slate-500">Download</button>
+                      <button onClick={() => handleStar(f, 'file')} className="text-yellow-500">{f.starred ? '★' : '☆'}</button>
                       <button onClick={() => setShareTarget({ id: f.id, name: f.name, type: 'file' })} className="text-indigo-600">Share</button>
                       <button onClick={() => handleTrash(f, 'file')} className="text-slate-400">Trash</button>
                     </>
@@ -397,12 +394,8 @@ export default function Dashboard() {
               placeholder="Folder name"
             />
             <div className="flex justify-end gap-2">
-              <button type="button" onClick={() => setShowNewFolder(false)} className="px-4 py-2 text-sm text-slate-600">
-                Cancel
-              </button>
-              <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg">
-                Create
-              </button>
+              <button type="button" onClick={() => setShowNewFolder(false)} className="px-4 py-2 text-sm text-slate-600">Cancel</button>
+              <button type="submit" className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg">Create</button>
             </div>
           </form>
         </div>

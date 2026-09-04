@@ -19,6 +19,9 @@ export const listFolders = (parentId) => api.get('/folders', { params: { parentI
 export const createFolder = (name, parentId) => api.post('/folders', { name, parentId });
 export const renameFolder = (id, name) => api.patch(`/folders/${id}/rename`, { name });
 export const trashFolder = (id) => api.post(`/folders/${id}/trash`);
+export const restoreFolder = (id) => api.post(`/folders/${id}/restore`);
+export const deleteFolderForever = (id) => api.delete(`/folders/${id}`);
+export const listTrashFolders = () => api.get('/folders/trash');
 
 // Files
 export const listFiles = (folderId) => api.get('/files', { params: { folderId } });
@@ -35,19 +38,21 @@ export const downloadFile = (id) => api.get(`/files/${id}/download`, { responseT
 export const renameFile = (id, name) => api.patch(`/files/${id}/rename`, { name });
 export const starFile = (id) => api.patch(`/files/${id}/star`);
 export const trashFile = (id) => api.post(`/files/${id}/trash`);
+export const restoreFile = (id) => api.post(`/files/${id}/restore`);
+export const deleteFileForever = (id) => api.delete(`/files/${id}`);
+export const listTrashFiles = () => api.get('/files/trash');
 
 // Shares
-export const createShare = (resourceType, resourceId, shareWithEmail, role) =>
+export const shareResource = (resourceType, resourceId, shareWithEmail, role) =>
   api.post('/shares', { resourceType, resourceId, shareWithEmail, role });
 export const listSharedWithMe = () => api.get('/shares/with-me');
 export const deleteShare = (id) => api.delete(`/shares/${id}`);
 
-// Trash
-export const listTrashFolders = () => api.get('/folders/trash');
-export const listTrashFiles = () => api.get('/files/trash');
-export const restoreFolder = (id) => api.post(`/folders/${id}/restore`);
-export const restoreFile = (id) => api.post(`/files/${id}/restore`);
-export const deleteFolderForever = (id) => api.delete(`/folders/${id}`);
-export const deleteFileForever = (id) => api.delete(`/files/${id}`);
+// Search
 export const searchItems = (q) => api.get('/search', { params: { q } });
+
+export const starFolder = (id) => api.patch(`/folders/${id}/star`);
+
+export const listStarredFolders = () => api.get('/folders/starred');
+export const listStarredFiles = () => api.get('/files/starred');
 export default api;
