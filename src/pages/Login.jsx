@@ -1,14 +1,35 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const googleBtnRef = useRef(null);
+
+  useEffect(() => {
+    if (!window.google || !googleBtnRef.current) return;
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: async (response) => {
+        try {
+          await loginWithGoogle(response.credential);
+          navigate('/');
+        } catch (err) {
+          setError('Google sign-in failed');
+        }
+      },
+    });
+    window.google.accounts.id.renderButton(googleBtnRef.current, {
+      theme: 'outline',
+      size: 'large',
+      width: 320,
+    });
+  }, []);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -64,6 +85,14 @@ export default function Login() {
             {busy ? 'Logging in...' : 'Log in'}
           </button>
         </form>
+
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1 h-px bg-slate-200" />
+          <span className="text-xs text-slate-400">OR</span>
+          <div className="flex-1 h-px bg-slate-200" />
+        </div>
+
+        <div ref={googleBtnRef} className="flex justify-center" />
 
         <p className="text-sm text-slate-500 mt-6 text-center">
           No account? <Link to="/register" className="text-indigo-600 font-medium">Sign up</Link>
