@@ -1,16 +1,90 @@
-# React + Vite
+# Cloudbox — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A cloud storage and file-sharing web app inspired by Google Drive, built with React + Vite + Tailwind CSS. Connects to the Cloudbox backend (Node.js/Express + PostgreSQL via Prisma) for authentication, file storage, sharing, and trash management.
 
-Currently, two official plugins are available:
+**Live Backend API:** https://cloudbox-backend-jn3d.onrender.com
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Features
 
-## React Compiler
+- **Authentication** — Register/login with JWT-based auth, persisted in localStorage
+- **File & Folder Management** — Create nested folders, upload files via button or drag-and-drop
+- **Upload UI** — Real-time upload progress bar, multi-file support, failure states
+- **File Preview & Download** — One-click download of stored files
+- **Search** — Live search across your files
+- **Sort** — Sort files/folders by name, date, or size
+- **Sharing** — Share files with other users by email, assign Viewer/Editor roles, manage/remove access
+- **Trash** — Soft-delete files and folders, restore or permanently delete them
+- **Breadcrumb Navigation** — Navigate nested folder structures easily
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tech Stack
 
-## Expanding the ESLint configuration
+- React (Vite)
+- Tailwind CSS
+- Axios (with JWT interceptor)
+- React Router
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Project Structure
+
+\`\`\`
+frontend/
+├── src/
+│   ├── components/
+│   │   └── ShareModal.jsx
+│   ├── context/
+│   │   └── AuthContext.jsx
+│   ├── pages/
+│   │   ├── Login.jsx
+│   │   ├── Register.jsx
+│   │   ├── Dashboard.jsx
+│   │   └── Trash.jsx
+│   ├── api.js
+│   ├── App.jsx
+│   └── main.jsx
+├── .env
+├── package.json
+└── vite.config.js
+\`\`\`
+
+## Environment Variables
+
+Create a `.env` file in the project root:
+
+\`\`\`
+VITE_API_URL=https://cloudbox-backend-jn3d.onrender.com/api
+\`\`\`
+
+## Getting Started
+
+\`\`\`bash
+npm install
+npm run dev
+\`\`\`
+
+App runs by default at `http://localhost:5173`.
+
+## Build for Production
+
+\`\`\`bash
+npm run build
+\`\`\`
+
+Output is generated in the `dist/` folder, ready to deploy to Vercel or Netlify.
+
+## Screenshots
+
+### Dashboard
+![Dashboard](./screenshots/dashboard.png)
+
+### Sharing
+![Sharing](./screenshots/share-modal.png)
+
+### Trash
+![Trash](./screenshots/trash.png)
+
+## Backend
+
+This frontend expects the [Cloudbox backend](../cloudbox-backend) to be running. Make sure `VITE_API_URL` points to a live backend instance.
+
+## Notes
+
+- JWT tokens are stored in `localStorage` under the key `token`. If you see repeated `401 Unauthorized` errors, log out and log back in to refresh the token.
